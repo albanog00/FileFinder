@@ -48,8 +48,8 @@ namespace FileFinder.Cli
 
         public async Task<int> ExecuteAsync(CommandContext context, Settings settings)
         {
-            AnsiConsole.MarkupLineInterpolated($"Searching[red]{(settings.Exact ? " exactly" : "")}[/] [dodgerblue2]`{settings.Name}`[/] in [yellow]`{settings.SearchPath}`[/] and subdirectories.");
-            AnsiConsole.MarkupLine($"Directories are{(settings.IncludeDirectories ? "" : " [red]not[/]")} included...");
+            AnsiConsole.MarkupLineInterpolated($"Searching[red]{(settings.Exact ? " exactly" : "")}[/] [dodgerblue2]`{settings.Name}`[/] in {Emoji.Known.OpenFileFolder} [yellow]`{settings.SearchPath}`[/] and subdirectories.");
+            AnsiConsole.MarkupLine($"Directories are{(settings.IncludeDirectories ? "" : " [red]not[/]")} included.");
             AnsiConsole.MarkupLine($"Display errors is {(settings.ShowErrors ? "[green]enabled" : "[red]disabled")}[/].\n");
 
             var directoryInfo = new DirectoryInfo(settings.SearchPath);
@@ -62,18 +62,18 @@ namespace FileFinder.Cli
         {
             if (settings.IncludeDirectories)
                 if (settings.Exact ? directoryInfo.Name == settings.Name : directoryInfo.Name.Contains(settings.Name))
-                    AnsiConsole.MarkupLineInterpolated($"[bold][green]Match![/] [yellow]{directoryInfo.FullName}[/][/]");
+                    AnsiConsole.MarkupLineInterpolated($"[bold][green]Match![/] {Emoji.Known.OpenFileFolder} [yellow]{directoryInfo.FullName}[/][/]");
 
             try {
                 foreach (var file in directoryInfo.GetFiles())
                     if (settings.Exact ? file.Name == settings.Name : file.Name.Contains(settings.Name))
-                        AnsiConsole.MarkupLineInterpolated($"[bold][green]Match![/] [dodgerblue2]{file.FullName}[/][/]");
+                        AnsiConsole.MarkupLineInterpolated($"[bold][green]Match![/] {Emoji.Known.PageFacingUp} [dodgerblue2]{file.FullName}[/][/]");
 
                 await Task.Run(async () => await Task.WhenAll(directoryInfo.GetDirectories().Select(x => Find(x, settings))));
             }
             catch (Exception ex) {
                 if (settings.ShowErrors)
-                    AnsiConsole.MarkupLineInterpolated($"[bold][red]Error:[/] {ex.Message}[/]");
+                    AnsiConsole.MarkupLineInterpolated($"[bold][red]Error:[/] {Emoji.Known.StopSign} {ex.Message}[/]");
             }
         }
     }
