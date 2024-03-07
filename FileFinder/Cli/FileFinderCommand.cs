@@ -60,14 +60,16 @@ namespace FileFinder.Cli
 
         private async Task Find(DirectoryInfo directoryInfo, Settings settings)
         {
+            if (directoryInfo.LinkTarget != null) return;
+
             if (settings.IncludeDirectories)
-                if (settings.Exact ? directoryInfo.Name == settings.Name : directoryInfo.Name.Contains(settings.Name))
-                    AnsiConsole.MarkupLineInterpolated($"[bold][green]Match![/] {Emoji.Known.OpenFileFolder} [yellow]{directoryInfo.FullName}[/][/]");
+                if (settings.Exact ? directoryInfo.FullName == settings.Name : directoryInfo.FullName.Contains(settings.Name))
+                    AnsiConsole.MarkupLine($"[bold][green]Match![/] {Emoji.Known.OpenFileFolder} [yellow]{directoryInfo.FullName.Replace(settings.Name, $"[red]{settings.Name}[/]")}[/][/]");
 
             try {
                 foreach (var file in directoryInfo.GetFiles())
-                    if (settings.Exact ? file.Name == settings.Name : file.Name.Contains(settings.Name))
-                        AnsiConsole.MarkupLineInterpolated($"[bold][green]Match![/] {Emoji.Known.PageFacingUp} [dodgerblue2]{file.FullName}[/][/]");
+                    if (settings.Exact ? file.FullName == settings.Name : file.FullName.Contains(settings.Name))
+                        AnsiConsole.MarkupLine($"[bold][green]Match![/] {Emoji.Known.PageFacingUp} [dodgerblue2]{file.FullName.Replace(settings.Name, $"[red]{settings.Name}[/]")}[/][/]");
 
                 await Task.Run(async () => await Task.WhenAll(directoryInfo.GetDirectories().Select(x => Find(x, settings))));
             }
