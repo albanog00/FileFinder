@@ -54,9 +54,14 @@ public class FileFinderCommand : Command<FileFinderCommand.Settings>
 
     public async Task<int> ExecuteAsync()
     {
-        AnsiConsole.MarkupLineInterpolated($"Searching[red]{(_settings.Exact ? " exactly" : "")}[/] [dodgerblue2]`{_settings.Name}`[/] in {Emoji.Known.OpenFileFolder} [yellow]`{_settings.SearchPath}`[/] and subdirectories.");
-        AnsiConsole.MarkupLine($"Directories are{(_settings.IncludeDirectories ? "" : " [red]not[/]")} included.");
-        AnsiConsole.MarkupLine($"Display errors is {(_settings.ShowErrors ? "[green]enabled" : "[red]disabled")}[/].\n");
+        AnsiConsole.MarkupLine(
+            $"""
+            {$"Searching[red]{(_settings.Exact ? " exactly" : "")}[/] " +
+                $"[dodgerblue2]`{_settings.Name}`[/] in {Emoji.Known.OpenFileFolder} " +
+                $"[yellow]`{_settings.SearchPath}`[/] and subdirectories"}
+            Directories are {(_settings.IncludeDirectories ? "" : "[red]not[/]")} included.
+            Display errors is {(_settings.ShowErrors ? "[green]enabled" : "[red]disabled")}[/].{"\n"}
+            """);
 
         var directoryInfo = new DirectoryInfo(_settings.SearchPath);
         await FindAsync(directoryInfo);
@@ -78,7 +83,7 @@ public class FileFinderCommand : Command<FileFinderCommand.Settings>
                 {
                     if (queue.TryDequeue(out var currentDirectory))
                     {
-                        dirProcessTasks.Add(Task.Run(() => ProcessDirectoryAsync(currentDirectory, queue)));
+                        dirProcessTasks.Add(Task.Run(() => ProcessDirectory(currentDirectory, queue)));
                     }
                 }
                 await Task.WhenAll(dirProcessTasks);
@@ -86,7 +91,7 @@ public class FileFinderCommand : Command<FileFinderCommand.Settings>
         }
     }
 
-    private void ProcessDirectoryAsync(DirectoryInfo directoryInfo, ConcurrentQueue<DirectoryInfo> queue)
+    private void ProcessDirectory(DirectoryInfo directoryInfo, ConcurrentQueue<DirectoryInfo> queue)
     {
         try
         {
@@ -94,16 +99,11 @@ public class FileFinderCommand : Command<FileFinderCommand.Settings>
                 ((_settings.Exact && directoryInfo.FullName == _settings.Name) ||
                 (!_settings.Exact && directoryInfo.FullName.Contains(_settings.Name))))
             {
-                AnsiConsole.MarkupLine($"[bold][green]Match![/] {Emoji.Known.OpenFileFolder} [yellow]{directoryInfo.FullName.Replace(_settings.Name, $"[red]{_settings.Name}[/]")}[/][/]");
-            }
-
-            foreach (var file in directoryInfo.EnumerateFiles()
-                .Where(x => (_settings.Exact && x.FullName == _settings.Name) ||
-                    (!_settings.Exact && x.FullName.Contains(_settings.Name))))
-            {
-                {
-                    AnsiConsole.MarkupLine($"[bold][green]Match![/] {Emoji.Known.PageFacingUp} [dodgerblue2]{file.FullName.Replace(_settings.Name, $"[red]{_settings.Name}[/]")}[/][/]");
-                }
+                AnsiConsole.Markup(string.Format(
+                    "[bold][green]Match![/] {0} [yellow]{1}[/][/]\n",
+                    Emoji.Known.OpenFileFolder,
+                    Markup.Escape(directoryInfo.FullName)
+                        .Replace(_settings.Name, $"[red]{_settings.Name}[/]")));
             }
 
             foreach (var subdirectory in directoryInfo.EnumerateDirectories()
@@ -111,12 +111,25 @@ public class FileFinderCommand : Command<FileFinderCommand.Settings>
             {
                 queue.Enqueue(subdirectory);
             }
+
+            foreach (var file in directoryInfo.EnumerateFiles()
+                .Where(x => (_settings.Exact && x.FullName == _settings.Name) ||
+                    (!_settings.Exact && x.FullName.Contains(_settings.Name))))
+            {
+                AnsiConsole.Markup(string.Format(
+                     "[bold][green]Match![/] {0} [dodgerblue2]{1}[/][/]\n",
+                     Emoji.Known.PageFacingUp,
+                     Markup.Escape(file.FullName)
+                         .Replace(_settings.Name, $"[red]{_settings.Name}[/]")));
+            }
         }
         catch (Exception ex)
         {
             if (_settings.ShowErrors)
             {
-                AnsiConsole.MarkupLineInterpolated($"[bold][red]Error:[/] {Emoji.Known.StopSign} {ex.Message}[/]");
+                AnsiConsole.Markup(string.Format(
+                    "[bold][red]Error:[/] {0} {1}[/]\n",
+                    Emoji.Known.StopSign, ex.Message));
             }
         }
     }
