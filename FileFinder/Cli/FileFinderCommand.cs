@@ -96,7 +96,7 @@ public class FileFinderCommand : Command<FileFinderCommand.Settings>
         try
         {
             if (_settings.IncludeDirectories &&
-                ((_settings.Exact && directoryInfo.FullName == _settings.Name) ||
+                ((_settings.Exact && directoryInfo.Name == _settings.Name) ||
                 (!_settings.Exact && directoryInfo.FullName.Contains(_settings.Name))))
             {
                 AnsiConsole.Markup(string.Format(
@@ -113,7 +113,7 @@ public class FileFinderCommand : Command<FileFinderCommand.Settings>
             }
 
             foreach (var file in directoryInfo.EnumerateFiles()
-                .Where(x => (_settings.Exact && x.FullName == _settings.Name) ||
+                .Where(x => (_settings.Exact && x.Name == _settings.Name) ||
                     (!_settings.Exact && x.FullName.Contains(_settings.Name))))
             {
                 AnsiConsole.Markup(string.Format(
