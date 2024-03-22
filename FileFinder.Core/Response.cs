@@ -1,6 +1,4 @@
-﻿using System.Text;
-
-namespace FileFinder.Core
+﻿namespace FileFinder.Core
 {
     public record struct Response()
     {

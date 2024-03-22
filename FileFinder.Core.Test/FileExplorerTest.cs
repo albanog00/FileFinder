@@ -1,11 +1,11 @@
 namespace FileFinder.Core.Test
 {
-    public class FileExplorerTest 
+    public class FileExplorerTest
     {
         [Fact]
-        public void Test1()
+        public void CheckFileTest()
         {
-
+            FileExplorer fileExplorer = new("FileFinder", null, null);
         }
     }
 }
