@@ -6,61 +6,71 @@ public class FileHandler
 {
     private readonly bool _shouldCheckFileName = false;
     private readonly bool _shouldCheckExtension = false;
-
-    public string FileName { get; init; } = string.Empty;
-    public string Extension { get; init; } = string.Empty;
+    private readonly bool _exactFileName = false;
+    private readonly string _fileName = string.Empty;
+    private readonly string _extension = string.Empty;
 
     public FileHandler(
         string? fileName,
-        string? extension)
+        string? extension,
+        bool? exactFileName)
     {
         if (!string.IsNullOrEmpty(fileName) && fileName.Length > 0)
         {
-            FileName = fileName;
+            _fileName = fileName;
             _shouldCheckFileName = true;
         }
 
         if (!string.IsNullOrEmpty(extension) && extension.Length > 0)
         {
             // Adds a `.` at the start if not present
-            Extension = extension[0] == '.' ? extension : '.' + extension;
+            _extension = extension[0] == '.' ? extension : '.' + extension;
             _shouldCheckExtension = true;
         }
+        _exactFileName = exactFileName ?? false;
     }
 
-    public FileHandler(string fileName)
-        : this(fileName, null) { }
+    public FileHandler(string? fileName, string? extension)
+        : this(fileName, extension, null) { }
+
+    public FileHandler(string? fileName)
+        : this(fileName, null, null) { }
+
+    public FileHandler()
+        : this(null, null, null) { }
 
     public bool Validate(string relativePath)
     {
+        string fileName = GetFileName(relativePath);
         string extension = _shouldCheckExtension
-            ? GetFileExtension(relativePath)
+            ? GetFileExtension(fileName)
             : string.Empty;
 
-        bool containsTarget = !_shouldCheckFileName ||
-            relativePath.Contains(FileName);
+        // TODO: Rewrite this
+        bool matchTarget = !_shouldCheckFileName
+            || (_exactFileName && fileName.Split('.')[0] == _fileName)
+            || (!_exactFileName && fileName.Contains(_fileName));
 
         bool matchExtension = !_shouldCheckExtension ||
-            (extension != string.Empty && Extension.Contains(extension));
+            (extension != string.Empty
+             && extension.Contains(_extension));
 
-        return containsTarget && matchExtension;
+        return matchTarget && matchExtension;
     }
 
-    public static string GetFileExtension(string path)
+    public static string GetFileExtension(string fileName)
     {
-        string fileName = GetFileName(path);
         var spanFileName = CollectionsMarshal.AsSpan(fileName.ToList());
         int length = spanFileName.Length;
-        string extension = string.Empty;
 
-        for (int i = length - 1; i >= 0; --i)
+        for (int i = 0; i < length; ++i)
         {
             if (spanFileName[i] == '.')
             {
-                extension = fileName[i..length];
+                return fileName[i..length];
             }
         }
-        return extension;
+        return string.Empty;
     }
 
     public static string GetFileName(string path)
@@ -72,7 +82,7 @@ public class FileHandler
         {
             if (IsDirectorySeparator(spanPath[i]))
             {
-                return path[(i+1)..length];
+                return path[(i + 1)..length];
             }
         }
         return path;

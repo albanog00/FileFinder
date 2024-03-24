@@ -6,8 +6,9 @@ namespace FileFinder.Core.Test
     {
         public string[] files = [
             "a.foo",
-            "b.foo",
+            "b.f",
             "c.exe",
+            "d.foobar",
             "a/b.exe",
             "a/b.foo",
             "a/b/c.foo",
@@ -19,15 +20,15 @@ namespace FileFinder.Core.Test
         {
             string[] expect = [
                 "a.foo",
-                "b.foo",
+                "d.foobar",
                 "a/b.foo",
                 "a/b/c.foo"
             ];
 
-            FileHandler fileChecker = new(null, "foo");
+            FileHandler fileHandler = new(null, "foo");
             List<string> actual = [];
             actual.AddRange(files
-                    .Where(fileChecker.Validate));
+                    .Where(fileHandler.Validate));
 
             Assert.Equal(expect, actual.ToArray());
         }
@@ -37,16 +38,17 @@ namespace FileFinder.Core.Test
         {
             string[] expect = [
                 "a.foo",
+                "d.foobar",
                 "a/b.exe",
                 "a/b.foo",
                 "a/b/c.foo",
                 "b/c/d.cas.md"
             ];
 
-            FileHandler fileChecker = new("a");
+            FileHandler fileHandler = new("a");
             List<string> actual = [];
             actual.AddRange(files
-                    .Where(fileChecker.Validate));
+                .Where(fileHandler.Validate));
 
             Assert.Equal(expect, actual.ToArray());
         }
@@ -58,10 +60,27 @@ namespace FileFinder.Core.Test
                 "a/b.exe",
             ];
 
-            FileHandler fileChecker = new("a", "exe");
+            FileHandler fileHandler = new("a", "exe");
             List<string> actual = [];
             actual.AddRange(files
-                    .Where(fileChecker.Validate));
+                .Where(fileHandler.Validate));
+
+            Assert.Equal(expect, actual.ToArray());
+        }
+
+        [Fact]
+        public void Validate_ShouldGetAllFilesPathWhereIsExactFileNameAndContainsExtension()
+        {
+            string[] expect = [
+                "b.f",
+                "a/b.exe",
+                "a/b.foo",
+            ];
+
+            FileHandler fileHandler = new("b", null, true);
+            List<string> actual = [];
+            actual.AddRange(files
+                .Where(fileHandler.Validate));
 
             Assert.Equal(expect, actual.ToArray());
         }
@@ -71,8 +90,9 @@ namespace FileFinder.Core.Test
         {
             string[] expect = [
                 ".foo",
-                ".foo",
+                ".f",
                 ".exe",
+                ".foobar",
                 ".exe",
                 ".foo",
                 ".foo",
@@ -93,8 +113,9 @@ namespace FileFinder.Core.Test
         {
             string[] expect = [
                 "a.foo",
-                "b.foo",
+                "b.f",
                 "c.exe",
+                "d.foobar",
                 "b.exe",
                 "b.foo",
                 "c.foo",
@@ -109,6 +130,5 @@ namespace FileFinder.Core.Test
 
             Assert.Equal(expect, actual);
         }
-
     }
 }

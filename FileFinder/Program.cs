@@ -6,15 +6,6 @@ using Spectre.Console.Cli;
 var fileFinder = new CommandApp<FileFinderCommand>();
 fileFinder.Run(args);
 #else
-var fileExplorer = new FileExplorer("File", null, @"..\");
-StreamWriter writer = new(Console.OpenStandardOutput())
-{
-    AutoFlush = true
-};
-
-var response = await fileExplorer.FindAsync();
-foreach (var filePath in response.MatchedFilePaths)
-{
-    writer.WriteLine(filePath);
-}
+var fileExplorer = new FileExplorer(null, null, @"..\", true);
+await fileExplorer.FindAsync();
 #endif

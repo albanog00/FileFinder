@@ -22,11 +22,11 @@ namespace FileFinder.Cli
 
         [Description("All files with the provided extension")]
         [CommandOption("-e|--extension")]
-        public string Extension { get; private set; } = string.Empty;
+        public string Extension { get; init; } = string.Empty;
 
-        [Description("Include directories to the search results. Default disabled")]
-        [CommandOption("--include-dir")]
-        public bool IncludeDirectories { get; init; } = false;
+        [Description("Search for exact file name")]
+        [CommandOption("--exact")]
+        public bool Exact { get; init; } = false;
 
         public override ValidationResult Validate()
         {
@@ -35,6 +35,10 @@ namespace FileFinder.Cli
                 return ValidationResult.Error($"Provided path `{SearchPath}` doesn't exists.");
             }
 
+            if (Exact && (string.IsNullOrEmpty(Name) || Name.Length == 0))
+            {
+                return ValidationResult.Error("Can't search for exact match if file name is null.");
+            }
             return base.Validate();
         }
     }

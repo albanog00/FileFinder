@@ -1,41 +1,58 @@
 ﻿using FileFinder.Core.Handler;
 using System.Collections.Concurrent;
+using System.Text;
 
 namespace FileFinder.Core;
 
 public class FileExplorer
 {
-    private string SearchPath { get; set; }
-    private FileHandler FileChecker { get; set; }
-    private DirectoryInfo DirectoryInfo { get; set; }
-    private Response Response { get; set; } = new();
+    private readonly StreamWriter _streamWriter =
+        new(Console.OpenStandardOutput()) { AutoFlush = true };
+
+    private readonly string _searchPath;
+    private readonly FileHandler _fileHandler;
+    private readonly DirectoryInfo _directoryInfo;
+    private readonly bool _showErrors;
 
     public FileExplorer(
         string? fileName,
         string? extension,
-        string? searchPath)
+        string? searchPath,
+        bool? showErrors,
+        bool? exactFileName)
     {
-        FileChecker = new(fileName, extension);
-        SearchPath =
+        _fileHandler = new(fileName, extension, exactFileName);
+        this._searchPath =
             !string.IsNullOrEmpty(searchPath) && searchPath.Length > 0
                 ? searchPath
                 : Directory.GetCurrentDirectory();
-        DirectoryInfo = new DirectoryInfo(SearchPath);
+        _directoryInfo = new DirectoryInfo(this._searchPath);
+        _showErrors = showErrors ?? false;
     }
 
+    public FileExplorer(
+        string? fileName,
+        string? extension,
+        string? searchPath,
+        bool? showErrors)
+        : this(fileName, extension, searchPath, showErrors, null) { }
+
+    public FileExplorer(string? fileName, string? extension, string? searchPath)
+        : this(fileName, extension, searchPath, null, null) { }
+
+    public FileExplorer(string? fileName, string? extension)
+        : this(fileName, extension, null, null, null) { }
+
+    public FileExplorer(string? fileName)
+        : this(fileName, null, null, null, null) { }
+
     public FileExplorer()
-        : this(null, null, null) { }
+        : this(null, null, null, null, null) { }
 
-    public FileExplorer(string fileName)
-        : this(fileName, null, null) { }
-
-    public FileExplorer(string fileName, string extension)
-        : this(fileName, extension, null) { }
-
-    public async Task<Response> FindAsync()
+    public async Task FindAsync()
     {
         var queue = new ConcurrentQueue<DirectoryInfo>();
-        queue.Enqueue(DirectoryInfo);
+        queue.Enqueue(_directoryInfo);
 
         while (!queue.IsEmpty)
         {
@@ -55,13 +72,14 @@ public class FileExplorer
             // Awaiting all threads to finish
             await Task.WhenAll(dirProcessTasks);
         }
-        return Response;
     }
 
     private void ProcessDirectory(
         DirectoryInfo currentDirectory,
         ConcurrentQueue<DirectoryInfo> queue)
     {
+        StringBuilder builder = new();
+
         try
         {
             // Excluding all the subdirectory that points to other folders
@@ -76,22 +94,24 @@ public class FileExplorer
             foreach (var file in currentDirectory.EnumerateFiles())
             {
                 string relativePath =
-                    Path.GetRelativePath(SearchPath, file.FullName);
-                if (FileChecker.Validate(relativePath))
+                    Path.GetRelativePath(_searchPath, file.FullName);
+                if (_fileHandler.Validate(relativePath))
                 {
-                    lock (Response.MatchedFilePaths)
-                    {
-                        Response.MatchedFilePaths.Add(relativePath);
-                    }
+                    builder.AppendLine(relativePath);
                 }
             }
         }
         catch (Exception ex)
         {
-            lock (Response.Errors)
+            if (_showErrors)
             {
-                Response.Errors.Add(ex.Message);
+                builder.AppendLine($"Error: {ex.Message}");
             }
+        }
+
+        lock (_streamWriter)
+        {
+            _streamWriter.Write(builder);
         }
     }
 }
