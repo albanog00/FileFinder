@@ -2,9 +2,10 @@
 using FileFinder.Core;
 using Spectre.Console.Cli;
 
-//var fileFinder = new CommandApp<FileFinderCommand>();
-//fileFinder.Run(args);
-
+#if !DEBUG
+var fileFinder = new CommandApp<FileFinderCommand>();
+fileFinder.Run(args);
+#else
 var fileExplorer = new FileExplorer("File", null, @"..\");
 StreamWriter writer = new(Console.OpenStandardOutput())
 {
@@ -16,4 +17,4 @@ foreach (var filePath in response.MatchedFilePaths)
 {
     writer.WriteLine(filePath);
 }
-
+#endif
