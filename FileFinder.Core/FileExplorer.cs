@@ -1,109 +1,97 @@
-﻿using System.Collections.Concurrent;
+﻿using FileFinder.Core.Handler;
+using System.Collections.Concurrent;
 
-namespace FileFinder.Core
+namespace FileFinder.Core;
+
+public class FileExplorer
 {
-    public class FileExplorer
+    private string SearchPath { get; set; }
+    private FileHandler FileChecker { get; set; }
+    private DirectoryInfo DirectoryInfo { get; set; }
+    private Response Response { get; set; } = new();
+
+    public FileExplorer(
+        string? fileName,
+        string? extension,
+        string? searchPath)
     {
-        private readonly bool _shouldCheckFileName = false;
-        private readonly bool _shouldCheckExtension = false;
+        FileChecker = new(fileName, extension);
+        SearchPath =
+            !string.IsNullOrEmpty(searchPath) && searchPath.Length > 0
+                ? searchPath
+                : Directory.GetCurrentDirectory();
+        DirectoryInfo = new DirectoryInfo(SearchPath);
+    }
 
-        public string FileName { get; init; } = string.Empty;
-        public string Extension { get; init; } = string.Empty;
-        public bool IncludeDirectories { get; init; } = false;
-        private Response Response { get; set; } = new();
+    public FileExplorer()
+        : this(null, null, null) { }
 
-        public FileExplorer(
-            string? fileName, string? extension, bool? includeDirectories)
+    public FileExplorer(string fileName)
+        : this(fileName, null, null) { }
+
+    public FileExplorer(string fileName, string extension)
+        : this(fileName, extension, null) { }
+
+    public async Task<Response> FindAsync()
+    {
+        var queue = new ConcurrentQueue<DirectoryInfo>();
+        queue.Enqueue(DirectoryInfo);
+
+        while (!queue.IsEmpty)
         {
-            IncludeDirectories = includeDirectories ?? false;
+            List<Task> dirProcessTasks = [];
 
-            if (!string.IsNullOrEmpty(fileName) && fileName.Length > 0)
+            // This while loop spawns threads until current queue elements
+            // are dequeued scanning one level at a time using `queueSize`
+            int queueSize = queue.Count;
+            while (--queueSize >= 0)
             {
-                FileName = fileName;
-                _shouldCheckFileName = true;
-            }
-
-            if (!string.IsNullOrEmpty(extension) && extension.Length > 0)
-            {
-                // Adds a `.` at the start if not present
-                Extension = extension[0] == '.' ? extension : '.' + extension;
-                _shouldCheckExtension = true;
-            }
-        }
-
-        public async Task<Response> FindAsync(DirectoryInfo directoryInfo)
-        {
-            var queue = new ConcurrentQueue<DirectoryInfo>();
-            queue.Enqueue(directoryInfo);
-
-            while (!queue.IsEmpty)
-            {
-                List<Task> dirProcessTasks = [];
-
-                // This while loop spawns threads until current queue elements
-                // are dequeued scanning one level at a time using `queueSize`
-                int queueSize = queue.Count;
-                while (--queueSize >= 0)
+                if (queue.TryDequeue(out var currentDirectory))
                 {
-                    if (queue.TryDequeue(out var currentDirectory))
-                    {
-                        dirProcessTasks.Add(Task.Run(() =>
-                            ProcessDirectory(currentDirectory, queue)));
-                    }
+                    dirProcessTasks.Add(Task.Run(() =>
+                        ProcessDirectory(currentDirectory, queue)));
                 }
-
-                // Awaiting all threads to finish
-                await Task.WhenAll(dirProcessTasks);
             }
-            return Response;
+            // Awaiting all threads to finish
+            await Task.WhenAll(dirProcessTasks);
         }
+        return Response;
+    }
 
-        private void ProcessDirectory(
-            DirectoryInfo directoryInfo,
-            ConcurrentQueue<DirectoryInfo> queue)
+    private void ProcessDirectory(
+        DirectoryInfo currentDirectory,
+        ConcurrentQueue<DirectoryInfo> queue)
+    {
+        try
         {
-            try
+            // Excluding all the subdirectory that points to other folders
+            // to avoid infinite recursion
+            foreach (var subdirectory in currentDirectory
+                .EnumerateDirectories()
+                .Where(x => x.LinkTarget == null))
             {
-                // Excluding all the subdirectory that points to other folders
-                // to avoid infinite recursion
-                foreach (var subdirectory in directoryInfo
-                    .EnumerateDirectories()
-                    .Where(x => x.LinkTarget == null))
-                {
-                    queue.Enqueue(subdirectory);
-                }
+                queue.Enqueue(subdirectory);
+            }
 
-                foreach (var file in directoryInfo.EnumerateFiles())
+            foreach (var file in currentDirectory.EnumerateFiles())
+            {
+                string relativePath =
+                    Path.GetRelativePath(SearchPath, file.FullName);
+                if (FileChecker.Validate(relativePath))
                 {
-                    if (CheckFile(file))
+                    lock (Response.MatchedFilePaths)
                     {
-                        lock (Response.MatchedFilePaths)
-                        {
-                            Response.MatchedFilePaths.Add(file.FullName);
-                        }
+                        Response.MatchedFilePaths.Add(relativePath);
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                lock (Response.Errors)
-                {
-                    Response.Errors.Add(ex.Message);
-                }
-            }
         }
-
-        private bool CheckDirectoryName(DirectoryInfo directoryInfo) =>
-            IncludeDirectories && directoryInfo.FullName.Contains(FileName);
-
-        private bool CheckFile(FileInfo file)
+        catch (Exception ex)
         {
-            bool containsTarget = !_shouldCheckFileName ||
-                file.Name.Contains(FileName);
-            bool matchExtension = !_shouldCheckExtension ||
-                file.Extension == Extension;
-
-            return containsTarget && matchExtension;
+            lock (Response.Errors)
+            {
+                Response.Errors.Add(ex.Message);
+            }
         }
     }
 }
