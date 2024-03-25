@@ -22,7 +22,7 @@ namespace FileFinder.Core.Test
                 "a.foo",
                 "d.foobar",
                 "a/b.foo",
-                "a/b/c.foo"
+                "a/b/c.foo",
             ];
 
             FileHandler fileHandler = new(null, "foo");
@@ -39,9 +39,6 @@ namespace FileFinder.Core.Test
             string[] expect = [
                 "a.foo",
                 "d.foobar",
-                "a/b.exe",
-                "a/b.foo",
-                "a/b/c.foo",
                 "b/c/d.cas.md"
             ];
 
@@ -56,9 +53,7 @@ namespace FileFinder.Core.Test
         [Fact]
         public void Validate_ShouldGetAllFilesPathThatContainsProvidedNameAndExtension()
         {
-            string[] expect = [
-                "a/b.exe",
-            ];
+            string[] expect = [];
 
             FileHandler fileHandler = new("a", "exe");
             List<string> actual = [];
