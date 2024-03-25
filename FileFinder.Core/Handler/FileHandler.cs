@@ -41,7 +41,10 @@ public class FileHandler
 
     public bool Validate(string relativePath)
     {
-        string fileName = GetFileName(relativePath);
+        string fileName = _shouldCheckFileName || _shouldCheckExtension
+            ? GetFileName(relativePath)
+            : string.Empty;
+
         string extension = _shouldCheckExtension
             ? GetFileExtension(fileName)
             : string.Empty;
