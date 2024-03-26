@@ -1,14 +1,11 @@
 ﻿using FileFinder.Core.Handler;
 using System.Collections.Concurrent;
-using System.Text;
 
 namespace FileFinder.Core;
 
 public class FileExplorer
 {
-    private readonly StreamWriter _streamWriter =
-        new(Console.OpenStandardOutput()) { AutoFlush = true };
-
+    private readonly StreamWriter _streamWriter;
     private readonly string _searchPath;
     private readonly FileHandler _fileHandler;
     private readonly DirectoryInfo _directoryInfo;
@@ -19,10 +16,18 @@ public class FileExplorer
         string? extension,
         string? searchPath,
         bool? showErrors,
-        bool? exactFileName)
+        bool? exactFileName,
+        Stream? stream)
     {
         _fileHandler = new(fileName, extension, exactFileName);
         _showErrors = showErrors ?? false;
+
+        _streamWriter =
+            stream is not null
+                ? new(stream)
+                : new(Console.OpenStandardError());
+
+        _streamWriter.AutoFlush = true;
 
         this._searchPath =
             !string.IsNullOrEmpty(searchPath) && searchPath.Length > 0
@@ -37,19 +42,19 @@ public class FileExplorer
         string? extension,
         string? searchPath,
         bool? showErrors)
-        : this(fileName, extension, searchPath, showErrors, null) { }
+        : this(fileName, extension, searchPath, showErrors, null, null) { }
 
     public FileExplorer(string? fileName, string? extension, string? searchPath)
-        : this(fileName, extension, searchPath, null, null) { }
+        : this(fileName, extension, searchPath, null, null, null) { }
 
     public FileExplorer(string? fileName, string? extension)
-        : this(fileName, extension, null, null, null) { }
+        : this(fileName, extension, null, null, null, null) { }
 
     public FileExplorer(string? fileName)
-        : this(fileName, null, null, null, null) { }
+        : this(fileName, null, null, null, null, null) { }
 
     public FileExplorer()
-        : this(null, null, null, null, null) { }
+        : this(null, null, null, null, null, null) { }
 
     public async Task<string[]> FindAsync()
     {
@@ -60,29 +65,33 @@ public class FileExplorer
         while (!queue.IsEmpty)
         {
             int queueSize = queue.Count;
-            Task[] dirProcessTasks = new Task[queueSize];
+            Task<string[]>[] tasks = new Task<string[]>[queueSize];
             // This while loop spawns threads until current queue elements
             // are dequeued scanning one level at a time using `queueSize`
             while (--queueSize >= 0)
             {
                 if (queue.TryDequeue(out var currentDirectory))
                 {
-                    dirProcessTasks[queueSize] = Task.Run(() =>
-                        ProcessDirectory(currentDirectory, queue, paths));
+                    tasks[queueSize] = Task.Run(() =>
+                        ProcessDirectory(currentDirectory, queue));
                 }
             }
             // Awaiting all threads to finish
-            await Task.WhenAll(dirProcessTasks);
+            await Task.WhenAll(tasks);
+
+            foreach (var task in tasks)
+            {
+                paths.AddRange(task.Result);
+            }
         }
         return [.. paths];
     }
 
-    private void ProcessDirectory(
+    private string[] ProcessDirectory(
         DirectoryInfo currentDirectory,
-        ConcurrentQueue<DirectoryInfo> queue,
-        List<string> paths)
+        ConcurrentQueue<DirectoryInfo> queue)
     {
-        StringBuilder builder = new();
+        List<string> tempPaths = [];
 
         try
         {
@@ -95,7 +104,6 @@ public class FileExplorer
                 queue.Enqueue(subdirectory);
             }
 
-            List<string> tempPaths = [];
             foreach (var file in currentDirectory.EnumerateFiles())
             {
                 string relativePath =
@@ -104,11 +112,6 @@ public class FileExplorer
                 {
                     tempPaths.Add(relativePath);
                 }
-            }
-
-            lock (paths)
-            {
-                paths.AddRange(tempPaths);
             }
         }
         catch (Exception ex)
@@ -121,5 +124,7 @@ public class FileExplorer
                 }
             }
         }
+
+        return [.. tempPaths];
     }
 }

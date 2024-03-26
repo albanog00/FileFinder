@@ -10,22 +10,21 @@ public class FileFinderCommand : Command<FileFinderCommandSettings>
         CommandContext context,
         FileFinderCommandSettings settings) => ExecuteAsync(settings).Result;
 
-    // TODO: Interactive search 
     private async Task<int> ExecuteAsync(FileFinderCommandSettings settings)
     {
-        AnsiConsole.Console = AnsiConsole.Create(new()
+        var console = AnsiConsole.Create(new()
         {
             Out = new AnsiConsoleOutput(
                 new StreamWriter(Console.OpenStandardOutput()))
         });
-        AnsiConsole.WriteLine("Searching...");
 
         var fileExplorer = new FileExplorer(
             settings.Name,
             settings.Extension,
             settings.SearchPath,
             settings.ShowErrors,
-            settings.Exact);
+            settings.Exact,
+            null);
 
         var filePaths = await fileExplorer.FindAsync();
 
@@ -36,13 +35,12 @@ public class FileFinderCommand : Command<FileFinderCommandSettings>
                 SearchEnabled = true,
                 Mode = SelectionMode.Independent
             };
-        searchPrompt.AddChoices(filePaths);
-        AnsiConsole.WriteLine();
-        
-        string selected = searchPrompt.Show(AnsiConsole.Console);
-        AnsiConsole.Clear();
-        AnsiConsole.WriteLine(selected);
+        console.WriteLine();
 
+        searchPrompt.AddChoices(filePaths);
+        string selected = searchPrompt.Show(console);
+
+        console.WriteLine(selected);
         return 0;
     }
 }
