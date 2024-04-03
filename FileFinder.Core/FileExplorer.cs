@@ -56,14 +56,15 @@ public class FileExplorer
     public FileExplorer()
         : this(null, null, null, null, null, null) { }
 
-    public async Task<string[]> FindAsync()
+    public async IAsyncEnumerable<IList<string>> FindAsync(
+            CancellationTokenSource cancellationToken)
     {
         var queue = new ConcurrentQueue<DirectoryInfo>();
         queue.Enqueue(_directoryInfo);
 
-        List<string> paths = [];
         while (!queue.IsEmpty)
         {
+            List<string> paths = [];
             int queueSize = queue.Count;
             Task<string[]>[] tasks = new Task<string[]>[queueSize];
             // This while loop spawns threads until current queue elements
@@ -79,12 +80,14 @@ public class FileExplorer
             // Awaiting all threads to finish
             await Task.WhenAll(tasks);
 
+            if (cancellationToken.IsCancellationRequested)
+                yield break;
+
             foreach (var task in tasks)
-            {
                 paths.AddRange(task.Result);
-            }
+
+            yield return paths;
         }
-        return [.. paths];
     }
 
     private string[] ProcessDirectory(
