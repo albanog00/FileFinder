@@ -1,0 +1,3 @@
+[submodule "CSharpTui"]
+	path = CSharpTui
+	url = https://github.com/albanog00/CSharpTui

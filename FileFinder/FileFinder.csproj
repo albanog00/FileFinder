@@ -8,12 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Spectre.Console" Version="0.48.1-preview.0.36" />
-    <PackageReference Include="Spectre.Console.Cli" Version="0.48.1-preview.0.36" />
+    <PackageReference Include="Cocona.Lite" Version="2.2.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\FileFinder.Cli\FileFinder.Cli.csproj" />
+    <ProjectReference Include="..\CSharpTui\src\CSharpTui.Core\CSharpTui.Core.csproj" />
+    <ProjectReference Include="..\FileFinder.Core\FileFinder.Core.csproj" />
   </ItemGroup>
 
 </Project>
