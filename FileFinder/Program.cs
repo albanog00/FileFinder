@@ -11,7 +11,7 @@ CoconaLiteApp.Run((
     ) =>
 {
     var fileExplorer = new FileExplorer(
-        fileName, extension, @"C:\Users\Giuseppe", showErrors, exact, null);
+        fileName, extension, searchPath, showErrors, exact, null);
     var prompt = new SelectionPrompt<string>();
     var cancellationToken = new CancellationTokenSource();
 
