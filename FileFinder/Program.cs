@@ -2,7 +2,7 @@
 using FileFinder.Core;
 using Cocona;
 
-CoconaLiteApp.Run((
+CoconaLiteApp.Run(async (
     [Argument] string? fileName,
     [Option('p')] string? searchPath,
     [Option('e')] string? extension,
@@ -13,17 +13,15 @@ CoconaLiteApp.Run((
     var fileExplorer = new FileExplorer(
         fileName, extension, searchPath, showErrors, exact, null);
     var prompt = new SelectionPrompt<string>();
-    var cancellationToken = new CancellationTokenSource();
+    var tokenSource = new CancellationTokenSource();
 
     var task = Task.Run(async () =>
     {
-        await foreach (var paths in fileExplorer.FindAsync(cancellationToken))
+        await foreach (var paths in fileExplorer.FindAsync(tokenSource))
             prompt.AddChoices(paths);
     });
 
-    var selectedPath = prompt
-        .Show("Search results");
-    cancellationToken.Cancel();
+    var selectedPath = await prompt.ShowAsync("Search results", tokenSource);
 
     Console.WriteLine(selectedPath);
 });
