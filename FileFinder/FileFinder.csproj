@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CSharpTui\src\CSharpTui.Core\CSharpTui.Core.csproj" />
+    <ProjectReference Include="..\CSharpTui\src\CSharpTui\CSharpTui.csproj" />
     <ProjectReference Include="..\FileFinder.Core\FileFinder.Core.csproj" />
   </ItemGroup>
 

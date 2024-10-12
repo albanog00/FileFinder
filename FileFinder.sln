@@ -13,7 +13,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CSharpTui", "CSharpTui", "{
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{52DEB04D-85DB-498D-B1E9-919384F42C0D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSharpTui.Core", "CSharpTui\src\CSharpTui.Core\CSharpTui.Core.csproj", "{4E43A7DE-47A9-4103-AF99-6DA82B46F477}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSharpTui", "CSharpTui\src\CSharpTui\CSharpTui.csproj", "{4E43A7DE-47A9-4103-AF99-6DA82B46F477}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
