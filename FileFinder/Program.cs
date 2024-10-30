@@ -22,7 +22,7 @@ CoconaLiteApp.Run(
         var prompt = new SelectionPrompt<string>();
         var tokenSource = new CancellationTokenSource();
 
-        var task = Task.Run(async () =>
+        Task.Run(async () =>
         {
             await foreach (var paths in fileExplorer.FindAsync(tokenSource))
                 prompt.AddChoices(paths);
